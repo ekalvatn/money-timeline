@@ -73,6 +73,32 @@ and pins down phase sequencing, each escalation mode, draw-downs, depletion,
 one-off timing and inflation-stated amounts, the fee treatment, retirement
 placement, and the degenerate cases.
 
+## Working backwards
+
+The projection answers "what happens if I do this." The **Work backwards** card
+answers the two questions people actually arrive with:
+
+- *What must I pay in to be worth 10 million by 57?*
+- *How much can I take out and not run dry?*
+
+Both are a binary search over the same engine (`lib/solve.ts`), and both scale
+every phase of the relevant direction by a single factor rather than rewriting
+one amount. That keeps the shape of the plan you designed — "pay in more while
+earnings peak" stays proportionally true — and answers the more useful question,
+which is how far short the whole plan is.
+
+Two consequences worth knowing. Phases run one after another, never at once, so
+for a multi-phase plan there is no single monthly figure to quote; the card
+gives the range and the scale factor instead of summing amounts you never
+actually pay in the same month. And the sustainable-withdrawal answer is by
+definition the one that empties the pot exactly at the end, which leaves nothing
+for a bad run of years — a constant-return model is at its least trustworthy
+precisely here.
+
+Answers are shown for all three scenarios, because the spread between them is
+the point. Nothing is applied until you press the button, and applied amounts
+are rounded so the plan keeps human numbers in its fields.
+
 ## Money inputs
 
 Amount fields group as you type, in the selected currency's own convention —

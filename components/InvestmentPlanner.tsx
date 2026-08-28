@@ -10,6 +10,7 @@ import type { AppState } from "@/lib/share";
 import type { PlanInput, ScenarioId } from "@/lib/types";
 import { CashFlowChart } from "./CashFlowChart";
 import { CompositionChart } from "./CompositionChart";
+import { GoalSeek } from "./GoalSeek";
 import { Milestones } from "./Milestones";
 import { ValueBreakdown } from "./ValueBreakdown";
 import { PlanForm } from "./PlanForm";
@@ -231,6 +232,24 @@ function Planner({
                 : "Amounts as they would appear on a future statement."}
             </p>
           </div>
+
+          <Card
+            title="Work backwards"
+            description="Set the answer you want and solve for the monthly amount that gets there."
+          >
+            <GoalSeek
+              plan={plan}
+              input={state.plan}
+              palette={palette}
+              currency={state.currency}
+              basis={basis}
+              timeline={timeline}
+              selectedIndex={selectedIndex}
+              onApply={(next) =>
+                setState((current) => ({ ...current, plan: next }))
+              }
+            />
+          </Card>
 
           <Card title="Projected value over time">
             {persist ? (
