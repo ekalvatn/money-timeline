@@ -62,6 +62,29 @@ are assumed smooth and constant, which no market has ever been — which matters
 most for draw-down phases, where the order of good and bad years changes how
 long the money lasts. It is a projection, not a forecast.
 
+## Money inputs
+
+Amount fields group as you type, in the selected currency's own convention —
+`1 234 567` in `nb-NO`, `1.234.567` in `de-DE`, `1,234,567` in `en-US`. Two
+details make that safe rather than annoying:
+
+- Group separators are stripped **before** the decimal point is located. A comma
+  groups in `en-US` and separates decimals in `nb-NO`, so `1,234` is 1234 in one
+  and 1.234 in the other. Where the locale's decimal separator is a comma, a
+  full stop is accepted too — both keys are on the keyboard.
+- The caret is restored by counting digits, not string index, so inserting a
+  digit mid-number doesn't drag the cursor backwards every time a separator
+  appears. A half-typed fraction (`5 000,`) survives long enough to be finished.
+
+Changing currency re-renders every amount in the new locale, so a value can
+never be re-read under the wrong separator rules. `lib/format.test.mts` covers
+the round-trips.
+
+Not modelled: tax, sequence-of-returns risk, and any variance at all. Returns
+are assumed smooth and constant, which no market has ever been — which matters
+most for draw-down phases, where the order of good and bad years changes how
+long the money lasts. It is a projection, not a forecast.
+
 ## Layout
 
 ```

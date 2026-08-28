@@ -61,6 +61,7 @@ export function EventEditor({
 
             <div className="mt-4 space-y-4">
               <NumberField
+                currency={currency}
                 label="Happens in year"
                 unit={`1–${years}`}
                 value={event.year}
@@ -85,18 +86,22 @@ export function EventEditor({
                     { value: "out", label: "Take out" },
                   ]}
                 />
-                <NumberField
-                  label="Amount"
-                  unit={currency}
-                  value={magnitude}
-                  onChange={(value) =>
-                    update(event.id, {
-                      amount: takingOut ? -Math.abs(value) : Math.abs(value),
-                    })
-                  }
-                  min={0}
-                  max={1e12}
-                />
+                <div className="mt-3">
+                  <NumberField
+                    currency={currency}
+                    grouped
+                    label="Amount"
+                    unit={currency}
+                    value={magnitude}
+                    onChange={(value) =>
+                      update(event.id, {
+                        amount: takingOut ? -Math.abs(value) : Math.abs(value),
+                      })
+                    }
+                    min={0}
+                    max={1e12}
+                  />
+                </div>
               </div>
 
               <label className="flex items-start gap-2 text-xs text-ink-2">

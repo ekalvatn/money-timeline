@@ -28,6 +28,8 @@ export function PlanForm({
     <div className="space-y-4">
       <Card title="Starting point">
         <NumberField
+          currency={currency}
+          grouped
           label="Already invested"
           unit={currency}
           value={plan.initialAmount}
@@ -67,6 +69,7 @@ export function PlanForm({
       <Card title="Assumptions">
         <div className="space-y-5">
           <NumberField
+            currency={currency}
             label="Inflation"
             unit="% per year"
             value={plan.inflationPercent}
@@ -77,6 +80,7 @@ export function PlanForm({
             hint="Used to convert future money into today's purchasing power."
           />
           <NumberField
+            currency={currency}
             label="Yearly cost"
             unit="% of assets"
             value={plan.annualFeePercent}
@@ -118,6 +122,7 @@ export function PlanForm({
               />
               <div className="flex-1">
                 <NumberField
+                  currency={currency}
                   label={scenario.label}
                   unit="% per year"
                   value={scenario.returnPercent}

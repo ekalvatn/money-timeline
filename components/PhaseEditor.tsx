@@ -105,6 +105,7 @@ export function PhaseEditor({
 
             <div className="mt-4 space-y-4">
               <NumberField
+                currency={currency}
                 label="Lasts"
                 unit="years"
                 value={phase.years}
@@ -133,19 +134,23 @@ export function PhaseEditor({
                     ]}
                   />
                 </div>
-                <NumberField
-                  label={takingOut ? "Amount taken out" : "Amount paid in"}
-                  unit={`${currency} / month`}
-                  value={magnitude}
-                  onChange={(value) =>
-                    update(phase.id, {
-                      monthlyAmount: takingOut ? -Math.abs(value) : Math.abs(value),
-                    })
-                  }
-                  min={0}
-                  max={1e9}
-                  slider={{ min: 0, max: 40000, step: 500 }}
-                />
+                <div className="mt-3">
+                  <NumberField
+                    currency={currency}
+                    grouped
+                    label={takingOut ? "Amount taken out" : "Amount paid in"}
+                    unit={`${currency} / month`}
+                    value={magnitude}
+                    onChange={(value) =>
+                      update(phase.id, {
+                        monthlyAmount: takingOut ? -Math.abs(value) : Math.abs(value),
+                      })
+                    }
+                    min={0}
+                    max={1e9}
+                    slider={{ min: 0, max: 40000, step: 500 }}
+                  />
+                </div>
               </div>
 
               <Select
@@ -156,6 +161,7 @@ export function PhaseEditor({
               />
               {phase.growthMode === "percent" && (
                 <NumberField
+                  currency={currency}
                   label="Yearly change"
                   unit="% per year"
                   value={phase.growthValue}
@@ -167,6 +173,8 @@ export function PhaseEditor({
               )}
               {phase.growthMode === "fixed" && (
                 <NumberField
+                  currency={currency}
+                  grouped
                   label="Yearly change"
                   unit={`${currency} / month, each year`}
                   value={phase.growthValue}

@@ -1,14 +1,37 @@
 "use client";
 
 import { useId, useState } from "react";
+import {
+  formatGrouped,
+  groupDigitsWhileTyping,
+  numberSeparators,
+  parseLocaleNumber,
+} from "@/lib/format";
+import type { CurrencyCode } from "@/lib/format";
 
-export function parseNumber(raw: string): number | null {
-  // Accept "1 234,5" and "1234.5" alike — thousands spaces and a comma decimal
-  // are what people actually type in the Nordics.
-  const cleaned = raw.replace(/[\s\u00A0]/g, "").replace(",", ".");
-  if (cleaned === "" || cleaned === "-") return null;
-  const value = Number(cleaned);
-  return Number.isFinite(value) ? value : null;
+/**
+ * Re-grouping moves characters around, so the caret is restored by counting
+ * digits rather than by string index — otherwise inserting a separator drags
+ * the cursor a place backwards on every fourth keystroke.
+ */
+function caretAfterDigits(
+  text: string,
+  digitCount: number,
+  afterDecimal: boolean,
+  decimal: string,
+): number {
+  if (digitCount === 0) return text.startsWith("-") ? 1 : 0;
+  let seen = 0;
+  for (let index = 0; index < text.length; index++) {
+    if (text[index] >= "0" && text[index] <= "9") {
+      seen++;
+      if (seen === digitCount) {
+        const position = index + 1;
+        return afterDecimal && text[position] === decimal ? position + 1 : position;
+      }
+    }
+  }
+  return text.length;
 }
 
 export function Card({
@@ -52,6 +75,8 @@ export function NumberField({
   label,
   value,
   onChange,
+  currency,
+  grouped = false,
   min = 0,
   max = Number.MAX_SAFE_INTEGER,
   unit,
@@ -61,6 +86,10 @@ export function NumberField({
   label: string;
   value: number;
   onChange: (value: number) => void;
+  /** Drives the locale: which character groups, and which one is the decimal. */
+  currency: CurrencyCode;
+  /** Money amounts are grouped as you type; years and percentages are not. */
+  grouped?: boolean;
   min?: number;
   max?: number;
   unit?: string;
@@ -69,20 +98,50 @@ export function NumberField({
   slider?: { min: number; max: number; step: number };
 }) {
   const id = useId();
-  const [text, setText] = useState(() => String(value));
+  const display = (amount: number) =>
+    grouped ? formatGrouped(amount, currency) : String(amount);
+
+  const [text, setText] = useState(() => display(value));
   const [lastValue, setLastValue] = useState(value);
+  const [lastCurrency, setLastCurrency] = useState(currency);
 
   // Keep the field in step with programmatic changes (presets, reset, slider)
   // without stamping over what the user is mid-way through typing. Adjusting
   // during render rather than in an effect avoids a second render pass.
-  if (value !== lastValue) {
+  if (currency !== lastCurrency) {
+    // A new locale means new separators: "5 000,25" would otherwise be re-read
+    // as 500025 the moment the reader touched the field again.
+    setLastCurrency(currency);
     setLastValue(value);
-    if (parseNumber(text) !== value) setText(String(value));
+    setText(display(value));
+  } else if (value !== lastValue) {
+    setLastValue(value);
+    if (parseLocaleNumber(text, currency) !== value) setText(display(value));
   }
 
-  const commit = (raw: string) => {
-    setText(raw);
-    const parsed = parseNumber(raw);
+  const commit = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const element = event.currentTarget;
+    const raw = element.value;
+    const next = grouped ? groupDigitsWhileTyping(raw, currency) : raw;
+
+    if (next !== raw) {
+      const caret = element.selectionStart ?? raw.length;
+      const before = raw.slice(0, caret);
+      const { decimal } = numberSeparators(currency);
+      const position = caretAfterDigits(
+        next,
+        (before.match(/\d/g) ?? []).length,
+        before.endsWith(decimal) || before.endsWith("."),
+        decimal,
+      );
+      // Write the value and caret straight to the DOM: React renders the same
+      // string a moment later, so this never fights the controlled value.
+      element.value = next;
+      element.setSelectionRange(position, position);
+    }
+
+    setText(next);
+    const parsed = parseLocaleNumber(next, currency);
     if (parsed !== null) onChange(Math.min(max, Math.max(min, parsed)));
   };
 
@@ -98,9 +157,10 @@ export function NumberField({
         id={id}
         type="text"
         inputMode="decimal"
+        autoComplete="off"
         value={text}
-        onChange={(event) => commit(event.target.value)}
-        onBlur={() => setText(String(value))}
+        onChange={commit}
+        onBlur={() => setText(display(value))}
         className="tabular mt-1.5 w-full rounded-lg border border-hair-strong bg-sunken px-3 py-2 text-sm text-ink"
       />
       {slider && (
