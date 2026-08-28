@@ -2,7 +2,7 @@
 
 import type { ChartPalette } from "@/lib/palette";
 import type { OneOffEvent, PlanInput, PlanPhase } from "@/lib/types";
-import { CURRENCIES } from "@/lib/format";
+import { CURRENCIES, formatCurrency } from "@/lib/format";
 import type { CurrencyCode } from "@/lib/format";
 import { EventEditor } from "./EventEditor";
 import { PhaseEditor } from "./PhaseEditor";
@@ -15,6 +15,7 @@ export function PlanForm({
   onCurrencyChange,
   palette,
   years,
+  feeDrag,
 }: {
   plan: PlanInput;
   onChange: (patch: Partial<PlanInput>) => void;
@@ -23,6 +24,8 @@ export function PlanForm({
   palette: ChartPalette;
   /** Total horizon, derived from the phases rather than entered directly. */
   years: number;
+  /** What the current cost setting takes, so the number moves as you drag it. */
+  feeDrag: number;
 }) {
   const retiresIn = plan.retirementAge - plan.currentAge;
 
@@ -125,7 +128,9 @@ export function PlanForm({
             min={0}
             max={5}
             slider={{ min: 0, max: 3, step: 0.05 }}
-            hint="Fund and platform fees, charged on the whole balance every year."
+            hint={`Charged on the whole balance every year. At ${
+              plan.annualFeePercent
+            } %, that is ${formatCurrency(feeDrag, currency)} over ${years} years.`}
           />
           <Select
             label="Currency"

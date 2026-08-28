@@ -102,6 +102,12 @@ export interface ScenarioResult extends Scenario {
   /** How much of the final value inflation eats: balance − realBalance. */
   inflationLoss: number;
   /**
+   * What the yearly cost took, measured on total value delivered — final
+   * balance plus everything withdrawn — so a plan that depletes early is not
+   * flattered by the withdrawals it could no longer pay.
+   */
+  feeDrag: number;
+  /**
    * The first year a withdrawal could not be paid in full, or null if the money
    * lasts. The clearest single signal that a draw-down plan is too aggressive.
    */
@@ -148,4 +154,15 @@ export interface PlanResult {
   chartRows: ChartRow[];
   /** Where each phase sits on the timeline, for chart annotations. */
   spans: PhaseSpan[];
+}
+
+/** A moment on the timeline worth naming. */
+export interface PlanMilestone {
+  /** Years from now. */
+  year: number;
+  kind: "amount" | "crossover";
+  /** The round number crossed, for "amount" milestones. */
+  threshold?: number;
+  /** Portfolio value that year, in whichever basis the caller passed in. */
+  value: number;
 }

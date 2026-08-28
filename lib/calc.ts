@@ -1,5 +1,6 @@
 import type {
   ChartRow,
+  PlanMilestone,
   OneOffEvent,
   PhaseSpan,
   PlanInput,
@@ -206,6 +207,61 @@ export function simulateScenario(
 }
 
 /**
+ * Round numbers worth crossing, on a 1-2-5 ladder from 10 000 up to the largest
+ * one the plan actually reaches.
+ */
+function roundNumbersUpTo(max: number): number[] {
+  const ladder: number[] = [];
+  for (let exponent = 4; exponent <= 15; exponent++) {
+    for (const base of [1, 2, 5]) {
+      const value = base * Math.pow(10, exponent);
+      if (value > max) return ladder;
+      ladder.push(value);
+    }
+  }
+  return ladder;
+}
+
+/**
+ * The moments worth naming on a trajectory: the last few round numbers it
+ * passes, and the crossover — the year growth first exceeds what you have put
+ * in, which is the whole argument for starting early.
+ *
+ * Both arrays are indexed by year and must be in the same money basis, so the
+ * caller decides whether these are future-money or today's-money milestones.
+ */
+export function milestonesFor(
+  balances: number[],
+  invested: number[],
+  limit = 4,
+): PlanMilestone[] {
+  if (!balances.length) return [];
+  // Thresholds come off the peak, not the final value: a draw-down plan passes
+  // its high-water mark long before it ends.
+  const peak = balances.reduce((high, value) => Math.max(high, value), 0);
+  const found: PlanMilestone[] = [];
+
+  for (const threshold of roundNumbersUpTo(peak).slice(-limit)) {
+    const year = balances.findIndex((balance) => balance >= threshold);
+    // Year 0 is the opening balance — being above a number already is not an
+    // event.
+    if (year > 0) {
+      found.push({ year, kind: "amount", threshold, value: balances[year] });
+    }
+  }
+
+  const crossover = balances.findIndex(
+    (balance, index) =>
+      invested[index] > 0 && balance - invested[index] > invested[index],
+  );
+  if (crossover > 0) {
+    found.push({ year: crossover, kind: "crossover", value: balances[crossover] });
+  }
+
+  return found.sort((a, b) => a.year - b.year);
+}
+
+/**
  * Retirement as an offset from today. Null when it has already passed or falls
  * beyond the last phase — there is nothing to mark in either case.
  */
@@ -220,6 +276,15 @@ export function buildPlan(input: PlanInput): PlanResult {
   const scenarios: ScenarioResult[] = input.scenarios.map((scenario) => {
     const { rows, depletedYear } = simulateScenario(input, scenario.returnPercent);
     const final = rows[rows.length - 1];
+
+    // The same plan with the cost switched off, to price the cost itself.
+    const feeFree = simulateScenario(
+      { ...input, annualFeePercent: 0 },
+      scenario.returnPercent,
+    ).rows;
+    const feeFreeFinal = feeFree[feeFree.length - 1];
+    const delivered = final.balance + final.totalWithdrawn;
+    const deliveredFeeFree = feeFreeFinal.balance + feeFreeFinal.totalWithdrawn;
     return {
       ...scenario,
       netReturnPercent:
@@ -233,6 +298,7 @@ export function buildPlan(input: PlanInput): PlanResult {
           ? (final.balance + final.totalWithdrawn) / final.totalContributed
           : 0,
       inflationLoss: final.balance - final.realBalance,
+      feeDrag: Math.max(0, deliveredFeeFree - delivered),
       depletedYear,
       atRetirement: retirementYear === null ? null : rows[retirementYear] ?? null,
     };

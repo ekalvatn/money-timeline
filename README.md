@@ -49,6 +49,15 @@ behaves. Costs scale the whole portfolio rather than just the gain:
 `net = (1 + r) × (1 − fee) − 1`. Flows are discounted from the month each one
 happened, so the "today's money" view compares like with like on both sides.
 
+Alongside the projection there are two read-outs derived from the same numbers
+rather than from new inputs: **milestones** — the round numbers the plan passes,
+and the crossover year where growth first outpaces what you have paid in — and a
+**growth, fees and inflation** breakdown. The fee figure is the plan re-run with
+the cost switched off, measured on total value delivered (final balance plus
+everything withdrawn) so a plan that depletes early is not flattered by the
+withdrawals it could no longer pay. The same number appears live under the cost
+input, where dragging the slider moves it.
+
 Every chart and the table share one control row: amounts in future money or
 today's money, and the timeline in ages or years from now. Retirement is marked
 only when it falls inside the horizon.

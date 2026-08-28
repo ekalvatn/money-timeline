@@ -5,6 +5,7 @@ import {
   monthlyFlowForPhaseYear,
   netAnnualReturn,
   phaseSpans,
+  milestonesFor,
   planYears,
   retirementYearFor,
   simulateScenario,
@@ -289,4 +290,95 @@ test("retirement is an offset from today, and only when it lands in range", () =
 
   // The very last year of the plan still counts as in range.
   assert.equal(retirementYearFor({ ...base, currentAge: 40, retirementAge: 50 }), 10);
+});
+
+test("prices the yearly cost by re-running the plan without it", () => {
+  const free = buildPlan({ ...base, annualFeePercent: 0 }).scenarios[0];
+  assert.equal(free.feeDrag, 0);
+
+  const charged = buildPlan({ ...base, annualFeePercent: 1 }).scenarios[0];
+  assert.ok(charged.feeDrag > 0);
+  // With no withdrawals the drag is exactly the gap in final balance.
+  assert.ok(
+    Math.abs(charged.feeDrag - (free.final.balance - charged.final.balance)) < 1e-6,
+  );
+  // A costlier plan loses more, and a longer one loses more again.
+  assert.ok(buildPlan({ ...base, annualFeePercent: 2 }).scenarios[0].feeDrag > charged.feeDrag);
+  assert.ok(
+    buildPlan({
+      ...base,
+      annualFeePercent: 1,
+      phases: [phase({ years: 30 })],
+    }).scenarios[0].feeDrag > charged.feeDrag,
+  );
+});
+
+test("counts the cost of withdrawals a depleted plan could not pay", () => {
+  // Measured on value delivered, so truncated withdrawals don't flatter the
+  // fee-charging run into looking cheap.
+  const drawdown = {
+    ...base,
+    initialAmount: 500_000,
+    annualFeePercent: 3,
+    phases: [phase({ years: 10, monthlyAmount: -5_000 })],
+  };
+  const result = buildPlan(drawdown).scenarios[0];
+  assert.ok(result.feeDrag > 0);
+  const delivered = result.final.balance + result.final.totalWithdrawn;
+  const free = buildPlan({ ...drawdown, annualFeePercent: 0 }).scenarios[0];
+  const deliveredFree = free.final.balance + free.final.totalWithdrawn;
+  assert.ok(Math.abs(result.feeDrag - (deliveredFree - delivered)) < 1e-6);
+});
+
+test("names the round numbers a plan passes, largest few first reached", () => {
+  const balances = [0, 15_000, 60_000, 120_000, 260_000, 520_000, 1_100_000];
+  const invested = balances.map(() => 1);
+  const found = milestonesFor(balances, invested).filter((m) => m.kind === "amount");
+  assert.deepEqual(
+    found.map((m) => [m.threshold, m.year]),
+    [
+      [100_000, 3],
+      [200_000, 4],
+      [500_000, 5],
+      [1_000_000, 6],
+    ],
+  );
+  // Milestones come back in the order they happen.
+  assert.deepEqual(
+    found.map((m) => m.year),
+    [...found.map((m) => m.year)].sort((a, b) => a - b),
+  );
+});
+
+test("starting above a round number is not a milestone", () => {
+  // Year 0 is the opening balance; being there already is not an event.
+  const found = milestonesFor([250_000, 260_000], [1, 1]);
+  assert.ok(found.every((m) => m.year > 0));
+  assert.ok(!found.some((m) => m.threshold === 100_000));
+});
+
+test("takes milestone thresholds off the peak, not the final value", () => {
+  // A draw-down plan passes its high-water mark long before it ends.
+  const balances = [0, 400_000, 1_200_000, 600_000, 50_000];
+  const found = milestonesFor(balances, balances.map(() => 1));
+  assert.ok(found.some((m) => m.threshold === 1_000_000));
+});
+
+test("finds the crossover where growth overtakes what was paid in", () => {
+  //                    y0   y1   y2   y3    y4
+  const balances = [0, 100, 250, 700, 1_000];
+  const invested = [0, 100, 200, 300, 400];
+  const found = milestonesFor(balances, invested).find((m) => m.kind === "crossover");
+  // Year 3 is the first where growth (700 − 300) exceeds the 300 paid in.
+  assert.equal(found?.year, 3);
+  assert.equal(found?.value, 700);
+
+  // No crossover while contributions still dominate.
+  const slow = milestonesFor([0, 100, 200], [0, 100, 200]);
+  assert.equal(slow.find((m) => m.kind === "crossover"), undefined);
+});
+
+test("milestones cope with an empty or flat plan", () => {
+  assert.deepEqual(milestonesFor([], []), []);
+  assert.deepEqual(milestonesFor([0, 0, 0], [0, 0, 0]), []);
 });

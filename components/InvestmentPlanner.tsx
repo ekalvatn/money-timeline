@@ -10,6 +10,8 @@ import type { AppState } from "@/lib/share";
 import type { PlanInput, ScenarioId } from "@/lib/types";
 import { CashFlowChart } from "./CashFlowChart";
 import { CompositionChart } from "./CompositionChart";
+import { Milestones } from "./Milestones";
+import { ValueBreakdown } from "./ValueBreakdown";
 import { PlanForm } from "./PlanForm";
 import { ProjectionChart } from "./ProjectionChart";
 import type { MoneyBasis } from "./ProjectionChart";
@@ -96,10 +98,6 @@ function Planner({
     selected.final.balance > 0
       ? (selected.final.growth / selected.final.balance) * 100
       : 0;
-  const inflationShare =
-    selected.final.balance > 0
-      ? (selected.inflationLoss / selected.final.balance) * 100
-      : 0;
 
   const copyLink = async () => {
     const url = `${window.location.origin}${window.location.pathname}#p=${encodeState(state)}`;
@@ -185,6 +183,7 @@ function Planner({
             }
             palette={palette}
             years={plan.years}
+            feeDrag={selected.feeDrag}
           />
         </div>
 
@@ -244,6 +243,22 @@ function Planner({
             ) : (
               <ChartPlaceholder height={340} />
             )}
+          </Card>
+
+          <Card
+            title="Milestones"
+            description={`On the ${selected.label.toLowerCase()} path, ${
+              basis === "real" ? "in today's money" : "in future money"
+            }.`}
+          >
+            <Milestones
+              scenario={selected}
+              seriesColor={palette.series[selectedIndex]}
+              currency={state.currency}
+              basis={basis}
+              timeline={timeline}
+              currentAge={plan.currentAge}
+            />
           </Card>
 
           <Card
@@ -325,9 +340,7 @@ function Planner({
                   take out{" "}
                   {formatCurrency(selected.final.totalWithdrawn, state.currency)}{" "}
                   along the way, and finish with{" "}
-                  {formatCurrency(selected.final.balance, state.currency)} —{" "}
-                  {formatCurrency(selected.final.realBalance, state.currency)} in
-                  today&rsquo;s purchasing power.
+                  {formatCurrency(selected.final.balance, state.currency)}.
                   {selected.depletedYear !== null && (
                     <> The pot runs dry in year {selected.depletedYear}.</>
                   )}
@@ -338,14 +351,23 @@ function Planner({
                   <strong className="font-medium text-ink">{selected.label}</strong>,{" "}
                   {formatPercent(growthShare)} of the final{" "}
                   {formatCurrency(selected.final.balance, state.currency)} is growth
-                  rather than money you paid in. Inflation then takes{" "}
-                  {formatCurrency(selected.inflationLoss, state.currency)} of it —{" "}
-                  {formatPercent(inflationShare)} — leaving{" "}
-                  {formatCurrency(selected.final.realBalance, state.currency)} in
-                  today&rsquo;s purchasing power.
+                  rather than money you paid in.
                 </>
               )}
             </p>
+          </Card>
+
+          <Card
+            title="Growth, fees and inflation"
+            description={`What the ${selected.label.toLowerCase()} path gains over ${plan.years} years, and what comes off it.`}
+          >
+            <ValueBreakdown
+              scenario={selected}
+              currency={state.currency}
+              annualFeePercent={state.plan.annualFeePercent}
+              inflationPercent={state.plan.inflationPercent}
+              years={plan.years}
+            />
           </Card>
 
           <Card
