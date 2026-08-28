@@ -32,6 +32,9 @@ export function YearTable({
             <th scope="col" className="px-3 py-2 font-medium text-ink-2">
               Year
             </th>
+            <th scope="col" className="px-3 py-2 font-medium text-ink-2">
+              Age
+            </th>
             <th scope="col" className="px-3 py-2 text-right font-medium text-ink-2">
               Paid in
             </th>
@@ -70,6 +73,14 @@ export function YearTable({
               <th scope="row" className="px-3 py-1.5 text-left font-normal text-ink-2">
                 {row.year === 0 ? "Now" : row.year}
               </th>
+              <td className="px-3 py-1.5 text-left text-ink-2">
+                {plan.currentAge + row.year}
+                {row.year === plan.retirementYear && (
+                  <span className="ml-1.5 text-[11px] text-ink-muted">
+                    retires
+                  </span>
+                )}
+              </td>
               <td className="px-3 py-1.5 text-right text-ink-2">
                 {formatCurrency(row.contributionThisYear, currency)}
               </td>
@@ -105,6 +116,7 @@ export function YearTable({
 export function planToCsv(plan: PlanResult): string {
   const header = [
     "year",
+    "age",
     "paid_in_this_year",
     "taken_out_this_year",
     "own_money_in_pot",
@@ -116,6 +128,7 @@ export function planToCsv(plan: PlanResult): string {
   ];
   const rows = (plan.scenarios[0]?.rows ?? []).map((row, index) => [
     row.year,
+    plan.currentAge + row.year,
     Math.round(row.contributionThisYear),
     Math.round(row.withdrawalThisYear),
     Math.round(row.netInvested),

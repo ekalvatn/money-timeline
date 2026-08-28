@@ -24,8 +24,45 @@ export function PlanForm({
   /** Total horizon, derived from the phases rather than entered directly. */
   years: number;
 }) {
+  const retiresIn = plan.retirementAge - plan.currentAge;
+
   return (
     <div className="space-y-4">
+      <Card
+        title="About you"
+        description="Sets the ages on the timeline. Retirement is a marker to read values at — the phases below decide when paying in actually stops."
+      >
+        <div className="space-y-5">
+          <NumberField
+            currency={currency}
+            label="Age today"
+            unit="years"
+            value={plan.currentAge}
+            onChange={(value) => onChange({ currentAge: Math.round(value) })}
+            min={0}
+            max={100}
+            slider={{ min: 18, max: 90, step: 1 }}
+          />
+          <NumberField
+            currency={currency}
+            label="Retirement age"
+            unit="years"
+            value={plan.retirementAge}
+            onChange={(value) => onChange({ retirementAge: Math.round(value) })}
+            min={0}
+            max={110}
+            slider={{ min: 40, max: 90, step: 1 }}
+            hint={
+              retiresIn > 0
+                ? retiresIn <= years
+                  ? `${retiresIn} years from now — inside the plan, so it is marked on every chart.`
+                  : `${retiresIn} years from now, past the end of the plan. Add phases to reach it.`
+                : "Already at or past retirement, so nothing is marked."
+            }
+          />
+        </div>
+      </Card>
+
       <Card title="Starting point">
         <NumberField
           currency={currency}

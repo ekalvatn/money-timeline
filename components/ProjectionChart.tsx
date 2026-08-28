@@ -19,7 +19,16 @@ import {
   formatCompactNumber,
   formatCurrency,
 } from "@/lib/format";
-import { ChartLegend, TooltipCard, axisProps, yearTicks } from "./chart-parts";
+import {
+  ChartLegend,
+  TooltipCard,
+  axisProps,
+  timelineAxisLabel,
+  timelineTick,
+  timelineTitle,
+  yearTicks,
+} from "./chart-parts";
+import type { TimelineBasis } from "./chart-parts";
 import { NARROW_QUERY, useMediaQuery } from "./use-media-query";
 import type { LegendItem } from "./chart-parts";
 
@@ -41,11 +50,13 @@ export function ProjectionChart({
   palette,
   currency,
   basis,
+  timeline,
 }: {
   plan: PlanResult;
   palette: ChartPalette;
   currency: CurrencyCode;
   basis: MoneyBasis;
+  timeline: TimelineBasis;
 }) {
   const investedKey = basis === "real" ? "investedReal" : "invested";
   const lastIndex = plan.chartRows.length - 1;
@@ -87,7 +98,7 @@ export function ProjectionChart({
     return (
       <TooltipCard
         palette={palette}
-        title={year === 0 ? "Today" : `After ${year} year${year === 1 ? "" : "s"}`}
+        title={timelineTitle(year, timeline, plan.currentAge)}
         rows={[
           ...plan.scenarios.map((scenario, index) => ({
             key: scenario.id,
@@ -164,8 +175,11 @@ export function ProjectionChart({
               {...axisProps(palette)}
               ticks={yearTicks(plan.years)}
               interval={0}
+              tickFormatter={(year: number) =>
+                timelineTick(year, timeline, plan.currentAge)
+              }
               label={{
-                value: "Years from now",
+                value: timelineAxisLabel(timeline),
                 position: "insideBottom",
                 offset: -14,
                 fill: palette.textMuted,
@@ -197,6 +211,19 @@ export function ProjectionChart({
                 strokeWidth={1}
               />
             ))}
+            {plan.retirementYear !== null && (
+              <ReferenceLine
+                x={plan.retirementYear}
+                stroke={palette.neutralStroke}
+                strokeWidth={1}
+                label={{
+                  value: `Retires at ${plan.retirementAge}`,
+                  position: "insideTopRight",
+                  fill: palette.textSecondary,
+                  fontSize: 11,
+                }}
+              />
+            )}
             {firstDepleted !== null && (
               <ReferenceLine
                 x={firstDepleted}

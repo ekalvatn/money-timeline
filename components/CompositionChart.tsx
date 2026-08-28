@@ -18,7 +18,16 @@ import {
   formatCompactNumber,
   formatCurrency,
 } from "@/lib/format";
-import { ChartLegend, TooltipCard, axisProps, yearTicks } from "./chart-parts";
+import {
+  ChartLegend,
+  TooltipCard,
+  axisProps,
+  timelineAxisLabel,
+  timelineTick,
+  timelineTitle,
+  yearTicks,
+} from "./chart-parts";
+import type { TimelineBasis } from "./chart-parts";
 import type { MoneyBasis } from "./ProjectionChart";
 import { NARROW_QUERY, useMediaQuery } from "./use-media-query";
 
@@ -42,12 +51,20 @@ export function CompositionChart({
   palette,
   currency,
   basis,
+  timeline,
+  currentAge,
+  retirementYear,
+  retirementAge,
 }: {
   scenario: ScenarioResult;
   seriesColor: string;
   palette: ChartPalette;
   currency: CurrencyCode;
   basis: MoneyBasis;
+  timeline: TimelineBasis;
+  currentAge: number;
+  retirementYear: number | null;
+  retirementAge: number;
 }) {
   const narrow = useMediaQuery(NARROW_QUERY);
   const data = scenario.rows.map((row) => {
@@ -67,7 +84,7 @@ export function CompositionChart({
     return (
       <TooltipCard
         palette={palette}
-        title={year === 0 ? "Today" : `After ${year} year${year === 1 ? "" : "s"}`}
+        title={timelineTitle(year, timeline, currentAge)}
         rows={[
           {
             key: "invested",
@@ -113,8 +130,11 @@ export function CompositionChart({
               {...axisProps(palette)}
               ticks={yearTicks(scenario.rows.length - 1)}
               interval={0}
+              tickFormatter={(year: number) =>
+                timelineTick(year, timeline, currentAge)
+              }
               label={{
-                value: "Years from now",
+                value: timelineAxisLabel(timeline),
                 position: "insideBottom",
                 offset: -14,
                 fill: palette.textMuted,
@@ -135,6 +155,19 @@ export function CompositionChart({
               content={(props) => renderTooltip(props as unknown as TooltipModel)}
             />
             <ReferenceLine y={0} stroke={palette.axis} strokeWidth={1} />
+            {retirementYear !== null && (
+              <ReferenceLine
+                x={retirementYear}
+                stroke={palette.neutralStroke}
+                strokeWidth={1}
+                label={{
+                  value: `Retires at ${retirementAge}`,
+                  position: "insideTopRight",
+                  fill: palette.textSecondary,
+                  fontSize: 11,
+                }}
+              />
+            )}
             {/*
               The lower band's stroke is painted in the surface colour, which
               reads as the 2px gap between stacked fills rather than a border.

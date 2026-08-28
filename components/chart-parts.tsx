@@ -108,6 +108,34 @@ export function TooltipCard({
   );
 }
 
+export type TimelineBasis = "years" | "age";
+
+/** Axis ticks stay on year indices; only their labels change. */
+export function timelineTick(
+  year: number,
+  basis: TimelineBasis,
+  currentAge: number,
+): string {
+  return basis === "age" ? String(currentAge + year) : String(year);
+}
+
+export function timelineAxisLabel(basis: TimelineBasis): string {
+  return basis === "age" ? "Your age" : "Years from now";
+}
+
+/** Tooltip headings name both readings, so neither view loses the other. */
+export function timelineTitle(
+  year: number,
+  basis: TimelineBasis,
+  currentAge: number,
+): string {
+  if (basis === "age") {
+    return year === 0 ? `Age ${currentAge}, today` : `Age ${currentAge + year}`;
+  }
+  if (year === 0) return "Today";
+  return `After ${year} year${year === 1 ? "" : "s"}`;
+}
+
 /**
  * Evenly spaced year ticks that always include both ends. Left to recharts,
  * `preserveStartEnd` crowds the tail into an irregular run (…8, 11, 13, 15…).

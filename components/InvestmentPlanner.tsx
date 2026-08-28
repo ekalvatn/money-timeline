@@ -13,6 +13,7 @@ import { CompositionChart } from "./CompositionChart";
 import { PlanForm } from "./PlanForm";
 import { ProjectionChart } from "./ProjectionChart";
 import type { MoneyBasis } from "./ProjectionChart";
+import type { TimelineBasis } from "./chart-parts";
 import { ScenarioCards } from "./ScenarioCards";
 import { YearTable, planToCsv } from "./YearTable";
 import { useIsHydrated, useTheme } from "./theme";
@@ -67,6 +68,7 @@ function Planner({
 
   const [state, setState] = useState<AppState>(initialState);
   const [basis, setBasis] = useState<MoneyBasis>("nominal");
+  const [timeline, setTimeline] = useState<TimelineBasis>("age");
   const [selectedId, setSelectedId] = useState<ScenarioId>("normal");
   const [shareLabel, setShareLabel] = useState("Copy link");
 
@@ -126,6 +128,10 @@ function Planner({
   const basisOptions = [
     { value: "nominal" as const, label: "Future money" },
     { value: "real" as const, label: "Today's money" },
+  ];
+  const timelineOptions = [
+    { value: "age" as const, label: "Your age" },
+    { value: "years" as const, label: "Years from now" },
   ];
 
   return (
@@ -189,24 +195,41 @@ function Planner({
             currency={state.currency}
             selectedId={selected.id}
             onSelect={setSelectedId}
+            retirementAge={plan.retirementAge}
           />
 
           {/* One control row for everything below it — both charts and the
               table read the same money basis, so they can never disagree. */}
-          <div className="flex flex-wrap items-center gap-3 rounded-xl border border-hair bg-surface px-5 py-3">
-            <span className="text-sm font-medium text-ink">Show amounts in</span>
-            <Segmented
-              label="Money basis"
-              size="sm"
-              value={basis}
-              onChange={setBasis}
-              options={basisOptions}
-            />
-            <span className="text-xs text-ink-muted">
+          <div className="rounded-xl border border-hair bg-surface px-5 py-3">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-sm font-medium text-ink">
+                  Show amounts in
+                </span>
+                <Segmented
+                  label="Money basis"
+                  size="sm"
+                  value={basis}
+                  onChange={setBasis}
+                  options={basisOptions}
+                />
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-sm font-medium text-ink">Timeline</span>
+                <Segmented
+                  label="Timeline basis"
+                  size="sm"
+                  value={timeline}
+                  onChange={setTimeline}
+                  options={timelineOptions}
+                />
+              </div>
+            </div>
+            <p className="mt-2 text-xs text-ink-muted">
               {basis === "real"
                 ? `What each amount would buy today, at ${state.plan.inflationPercent} % inflation.`
                 : "Amounts as they would appear on a future statement."}
-            </span>
+            </p>
           </div>
 
           <Card title="Projected value over time">
@@ -216,6 +239,7 @@ function Planner({
                 palette={palette}
                 currency={state.currency}
                 basis={basis}
+                timeline={timeline}
               />
             ) : (
               <ChartPlaceholder height={340} />
@@ -232,6 +256,7 @@ function Planner({
                 palette={palette}
                 currency={state.currency}
                 basis={basis}
+                timeline={timeline}
               />
             ) : (
               <ChartPlaceholder height={240} />
@@ -245,7 +270,11 @@ function Planner({
                   <span className="font-medium text-ink">
                     {index + 1}. {span.label}
                   </span>{" "}
-                  · years {span.startYear + 1}–{span.endYear} ·{" "}
+                  ·{" "}
+                  {timeline === "age"
+                    ? `ages ${plan.currentAge + span.startYear}–${plan.currentAge + span.endYear}`
+                    : `years ${span.startYear + 1}–${span.endYear}`}{" "}
+                  ·{" "}
                   <span style={{ color: span.monthlyAmount < 0 ? palette.flowOut : undefined }}>
                     {span.monthlyAmount < 0 ? "−" : "+"}
                     {formatCurrency(Math.abs(span.monthlyAmount), state.currency)}/mo
@@ -278,6 +307,10 @@ function Planner({
                 palette={palette}
                 currency={state.currency}
                 basis={basis}
+                timeline={timeline}
+                currentAge={plan.currentAge}
+                retirementYear={plan.retirementYear}
+                retirementAge={plan.retirementAge}
               />
             ) : (
               <ChartPlaceholder height={300} />

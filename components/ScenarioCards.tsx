@@ -19,12 +19,14 @@ export function ScenarioCards({
   currency,
   selectedId,
   onSelect,
+  retirementAge,
 }: {
   scenarios: ScenarioResult[];
   palette: ChartPalette;
   currency: CurrencyCode;
   selectedId: string;
   onSelect: (id: ScenarioResult["id"]) => void;
+  retirementAge: number;
 }) {
   return (
     <div className="grid gap-4 sm:grid-cols-3">
@@ -82,6 +84,14 @@ export function ScenarioCards({
             )}
 
             <dl className="tabular mt-4 space-y-1.5 border-t border-hair pt-3 text-xs">
+              {scenario.atRetirement && (
+                <div className="flex justify-between gap-3">
+                  <dt className="text-ink-muted">At age {retirementAge}</dt>
+                  <dd className="font-medium text-ink">
+                    {formatCurrency(scenario.atRetirement.balance, currency)}
+                  </dd>
+                </div>
+              )}
               <div className="flex justify-between gap-3">
                 <dt className="text-ink-muted">Paid in</dt>
                 <dd className="text-ink-2">

@@ -14,7 +14,16 @@ import type { ChartPalette } from "@/lib/palette";
 import type { PlanResult } from "@/lib/types";
 import type { CurrencyCode } from "@/lib/format";
 import { formatCompact, formatCompactNumber, formatCurrency } from "@/lib/format";
-import { ChartLegend, TooltipCard, axisProps, yearTicks } from "./chart-parts";
+import {
+  ChartLegend,
+  TooltipCard,
+  axisProps,
+  timelineAxisLabel,
+  timelineTick,
+  timelineTitle,
+  yearTicks,
+} from "./chart-parts";
+import type { TimelineBasis } from "./chart-parts";
 import type { MoneyBasis } from "./ProjectionChart";
 import { NARROW_QUERY, useMediaQuery } from "./use-media-query";
 
@@ -34,11 +43,13 @@ export function CashFlowChart({
   palette,
   currency,
   basis,
+  timeline,
 }: {
   plan: PlanResult;
   palette: ChartPalette;
   currency: CurrencyCode;
   basis: MoneyBasis;
+  timeline: TimelineBasis;
 }) {
   const narrow = useMediaQuery(NARROW_QUERY);
   const inKey = basis === "real" ? "paidInReal" : "paidIn";
@@ -58,7 +69,7 @@ export function CashFlowChart({
     return (
       <TooltipCard
         palette={palette}
-        title={`Year ${year}`}
+        title={timelineTitle(year, timeline, plan.currentAge)}
         rows={[
           {
             key: "in",
@@ -98,8 +109,11 @@ export function CashFlowChart({
               {...axisProps(palette)}
               ticks={yearTicks(plan.years).filter((year) => year > 0)}
               interval={0}
+              tickFormatter={(year: number) =>
+                timelineTick(year, timeline, plan.currentAge)
+              }
               label={{
-                value: "Years from now",
+                value: timelineAxisLabel(timeline),
                 position: "insideBottom",
                 offset: -14,
                 fill: palette.textMuted,
@@ -121,6 +135,19 @@ export function CashFlowChart({
             />
             {/* The neutral zero line is the midpoint of the diverging encoding. */}
             <ReferenceLine y={0} stroke={palette.axis} strokeWidth={1} />
+            {plan.retirementYear !== null && (
+              <ReferenceLine
+                x={plan.retirementYear}
+                stroke={palette.neutralStroke}
+                strokeWidth={1}
+                label={{
+                  value: `Retires at ${plan.retirementAge}`,
+                  position: "insideTopRight",
+                  fill: palette.textSecondary,
+                  fontSize: 11,
+                }}
+              />
+            )}
             <Bar
               dataKey={inKey}
               name="Paid in"

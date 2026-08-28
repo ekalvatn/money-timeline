@@ -2,6 +2,8 @@ import type { OneOffEvent, PlanInput, PlanPhase } from "./types";
 import type { CurrencyCode } from "./format";
 
 export const DEFAULT_PLAN: PlanInput = {
+  currentAge: 32,
+  retirementAge: 67,
   initialAmount: 50_000,
   phases: [
     {

@@ -6,6 +6,7 @@ import {
   netAnnualReturn,
   phaseSpans,
   planYears,
+  retirementYearFor,
   simulateScenario,
 } from "./calc.ts";
 import type { PlanInput, PlanPhase } from "./types.ts";
@@ -21,6 +22,8 @@ const phase = (overrides: Partial<PlanPhase> = {}): PlanPhase => ({
 });
 
 const base: PlanInput = {
+  currentAge: 40,
+  retirementAge: 65,
   initialAmount: 100_000,
   phases: [phase()],
   events: [],
@@ -265,4 +268,25 @@ test("the per-krone multiple counts money already taken out", () => {
   }).scenarios[0];
   assert.ok(result.growthMultiple < noWithdrawal.growthMultiple);
   assert.ok(result.growthMultiple > 1);
+});
+
+test("retirement is an offset from today, and only when it lands in range", () => {
+  // 25 years away but the plan only runs 10 — nothing to mark.
+  assert.equal(retirementYearFor(base), null);
+  assert.equal(buildPlan(base).retirementYear, null);
+  assert.equal(buildPlan(base).scenarios[0].atRetirement, null);
+
+  const inRange = { ...base, currentAge: 40, retirementAge: 47 };
+  assert.equal(retirementYearFor(inRange), 7);
+  const plan = buildPlan(inRange);
+  assert.equal(plan.retirementYear, 7);
+  assert.equal(plan.scenarios[0].atRetirement, plan.scenarios[0].rows[7]);
+  assert.equal(plan.scenarios[0].atRetirement?.year, 7);
+
+  // Already retired, or retiring today, marks nothing.
+  assert.equal(retirementYearFor({ ...base, currentAge: 70, retirementAge: 65 }), null);
+  assert.equal(retirementYearFor({ ...base, currentAge: 65, retirementAge: 65 }), null);
+
+  // The very last year of the plan still counts as in range.
+  assert.equal(retirementYearFor({ ...base, currentAge: 40, retirementAge: 50 }), 10);
 });

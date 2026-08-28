@@ -76,6 +76,10 @@ export function sanitizeState(raw: unknown): AppState {
       ? (source.currency as CurrencyCode)
       : DEFAULT_CURRENCY,
     plan: {
+      currentAge: Math.round(num(plan.currentAge, DEFAULT_PLAN.currentAge, 0, 100)),
+      retirementAge: Math.round(
+        num(plan.retirementAge, DEFAULT_PLAN.retirementAge, 0, 110),
+      ),
       initialAmount: num(plan.initialAmount, DEFAULT_PLAN.initialAmount, 0, 1e12),
       phases: safePhases,
       events: rawEvents

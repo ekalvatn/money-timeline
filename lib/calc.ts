@@ -205,7 +205,18 @@ export function simulateScenario(
   return { rows, depletedYear };
 }
 
+/**
+ * Retirement as an offset from today. Null when it has already passed or falls
+ * beyond the last phase — there is nothing to mark in either case.
+ */
+export function retirementYearFor(input: PlanInput): number | null {
+  const offset = Math.round(input.retirementAge - input.currentAge);
+  return offset > 0 && offset <= planYears(input.phases) ? offset : null;
+}
+
 export function buildPlan(input: PlanInput): PlanResult {
+  const retirementYear = retirementYearFor(input);
+
   const scenarios: ScenarioResult[] = input.scenarios.map((scenario) => {
     const { rows, depletedYear } = simulateScenario(input, scenario.returnPercent);
     const final = rows[rows.length - 1];
@@ -223,6 +234,7 @@ export function buildPlan(input: PlanInput): PlanResult {
           : 0,
       inflationLoss: final.balance - final.realBalance,
       depletedYear,
+      atRetirement: retirementYear === null ? null : rows[retirementYear] ?? null,
     };
   });
 
@@ -256,6 +268,9 @@ export function buildPlan(input: PlanInput): PlanResult {
 
   return {
     years: planYears(input.phases),
+    currentAge: input.currentAge,
+    retirementAge: input.retirementAge,
+    retirementYear,
     scenarios,
     chartRows,
     spans: phaseSpans(input.phases),

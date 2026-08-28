@@ -31,6 +31,8 @@ years.
 
 | Input | Notes |
 |---|---|
+| Age today | Lets the timeline be read in ages rather than years from now |
+| Retirement age | A marker on every chart and a milestone to read values at. It does not change behaviour — the phases decide when paying in stops — so a plan whose draw-down starts three years after retirement shows exactly that |
 | Already invested | A lump sum in the pot today |
 | Phase length | 1–60 years; phases run consecutively |
 | Phase monthly amount | Pay in, or take out — a negative flow is a draw-down |
@@ -47,6 +49,10 @@ behaves. Costs scale the whole portfolio rather than just the gain:
 `net = (1 + r) × (1 − fee) − 1`. Flows are discounted from the month each one
 happened, so the "today's money" view compares like with like on both sides.
 
+Every chart and the table share one control row: amounts in future money or
+today's money, and the timeline in ages or years from now. Retirement is marked
+only when it falls inside the horizon.
+
 **Withdrawals can never take out more than is there.** When one falls short the
 plan is marked depleted from that year, and the year is called out on the
 scenario card and marked on the projection chart. Because a scenario can run dry
@@ -54,13 +60,8 @@ while a more optimistic one does not, depletion is tracked per scenario.
 
 `lib/calc.test.mts` checks the engine against the closed-form annuity formula
 and pins down phase sequencing, each escalation mode, draw-downs, depletion,
-one-off timing and inflation-stated amounts, the fee treatment, and the
-degenerate cases.
-
-Not modelled: tax, sequence-of-returns risk, and any variance at all. Returns
-are assumed smooth and constant, which no market has ever been — which matters
-most for draw-down phases, where the order of good and bad years changes how
-long the money lasts. It is a projection, not a forecast.
+one-off timing and inflation-stated amounts, the fee treatment, retirement
+placement, and the degenerate cases.
 
 ## Money inputs
 

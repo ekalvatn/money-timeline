@@ -47,6 +47,13 @@ export interface OneOffEvent {
 }
 
 export interface PlanInput {
+  /** Age today. The timeline can be read in ages instead of years from now. */
+  currentAge: number;
+  /**
+   * Age you plan to retire. A marker on the timeline and a milestone to read
+   * values at — the phases, not this, decide when paying in stops.
+   */
+  retirementAge: number;
   /** Lump sum already invested today. */
   initialAmount: number;
   phases: PlanPhase[];
@@ -99,6 +106,8 @@ export interface ScenarioResult extends Scenario {
    * lasts. The clearest single signal that a draw-down plan is too aggressive.
    */
   depletedYear: number | null;
+  /** The year retirement lands on, or null when it falls outside the horizon. */
+  atRetirement: YearRow | null;
 }
 
 export interface ChartRow {
@@ -130,6 +139,11 @@ export interface PhaseSpan {
 
 export interface PlanResult {
   years: number;
+  /** Age today, so a chart can label its axis in ages. */
+  currentAge: number;
+  /** Years from now that retirement lands, or null if outside the horizon. */
+  retirementYear: number | null;
+  retirementAge: number;
   scenarios: ScenarioResult[];
   chartRows: ChartRow[];
   /** Where each phase sits on the timeline, for chart annotations. */
