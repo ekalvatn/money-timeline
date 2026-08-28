@@ -1,8 +1,9 @@
-# Investment plan
+# Money Timeline
 
-A projection tool for regular investing: put in a horizon, a monthly amount and
-a few assumptions, and see what compounding does to it — across three return
-scenarios, in future money and in today's purchasing power.
+A projection tool for a whole financial life: describe the stretches where you
+pay in, the stretches where you draw back out, and a few assumptions, and see
+the shape it makes — across three return scenarios, in future money and in
+today's purchasing power.
 
 Everything runs in the browser. There is no backend, no account and no data
 leaves the machine; a plan is kept in `localStorage` and can be shared as a

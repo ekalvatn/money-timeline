@@ -21,7 +21,7 @@ import { YearTable, planToCsv } from "./YearTable";
 import { useIsHydrated, useTheme } from "./theme";
 import { Button, Card, Segmented } from "./ui";
 
-const STORAGE_KEY = "investment-plan:state";
+const STORAGE_KEY = "money-timeline:state";
 
 const INITIAL_STATE: AppState = {
   plan: DEFAULT_PLAN,
@@ -118,7 +118,7 @@ function Planner({
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = `investment-plan-${plan.years}y.csv`;
+    anchor.download = `money-timeline-${plan.years}y.csv`;
     anchor.click();
     URL.revokeObjectURL(url);
   };
@@ -137,10 +137,11 @@ function Planner({
       <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-ink">
-            Investment plan
+            Money Timeline
           </h1>
           <p className="mt-1 max-w-prose text-sm text-ink-2">
-            How a monthly habit compounds over {plan.years} years — across three
+            {plan.years} years of paying in and drawing back out, from age{" "}
+            {plan.currentAge} to {plan.currentAge + plan.years} — across three
             return scenarios, in future money and in today&rsquo;s purchasing
             power.
           </p>

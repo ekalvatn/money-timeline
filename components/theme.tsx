@@ -5,7 +5,7 @@ import type { Mode } from "@/lib/palette";
 
 export type ThemePreference = "light" | "dark" | "system";
 
-const STORAGE_KEY = "investment-plan:theme";
+const STORAGE_KEY = "money-timeline:theme";
 
 /**
  * Runs before paint so the first frame is already in the right theme. Kept in

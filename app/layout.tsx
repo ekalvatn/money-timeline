@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Investment Plan",
+  title: "Money Timeline",
   description:
-    "Project how monthly investing compounds over time — across pessimistic, expected and optimistic returns, in future money and in today's money.",
+    "Project a lifetime of money: what you pay in, what compounds, and what you draw back out — across pessimistic, expected and optimistic returns, in future money and in today's.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
