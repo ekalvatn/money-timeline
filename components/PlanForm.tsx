@@ -6,7 +6,7 @@ import { CURRENCIES, formatCurrency } from "@/lib/format";
 import type { CurrencyCode } from "@/lib/format";
 import { EventEditor } from "./EventEditor";
 import { PhaseEditor } from "./PhaseEditor";
-import { Card, NumberField, Select } from "./ui";
+import { Card, Checkbox, NumberField, Select } from "./ui";
 
 export function PlanForm({
   plan,
@@ -141,6 +141,101 @@ export function PlanForm({
             }))}
             onChange={onCurrencyChange}
           />
+        </div>
+      </Card>
+
+      <Card
+        title="Tax"
+        description="Deferred, share-account style: nothing is charged while the money compounds, and withdrawals take tax-free deposits out before they touch gains."
+      >
+        <div className="space-y-5">
+          <Checkbox
+            label="Model tax"
+            checked={plan.tax.enabled}
+            onChange={(enabled) => onChange({ tax: { ...plan.tax, enabled } })}
+            hint="Defaults are Norwegian. Switch this off for a pre-tax projection."
+          />
+          {plan.tax.enabled && (
+            <>
+              <NumberField
+                currency={currency}
+                label="Tax on gains"
+                unit="% when realised"
+                value={plan.tax.gainsRatePercent}
+                onChange={(value) =>
+                  onChange({ tax: { ...plan.tax, gainsRatePercent: value } })
+                }
+                min={0}
+                max={90}
+                slider={{ min: 0, max: 60, step: 0.01 }}
+              />
+              <NumberField
+                currency={currency}
+                label="Shielding rate"
+                unit="% per year"
+                value={plan.tax.shieldingRatePercent}
+                onChange={(value) =>
+                  onChange({ tax: { ...plan.tax, shieldingRatePercent: value } })
+                }
+                min={0}
+                max={20}
+                slider={{ min: 0, max: 8, step: 0.1 }}
+                hint="Skjermingsfradrag: a yearly allowance on your deposits that piles up unused and shelters gains when you finally take them out."
+              />
+
+              <Checkbox
+                label="Wealth tax"
+                checked={plan.tax.wealthTaxEnabled}
+                onChange={(wealthTaxEnabled) =>
+                  onChange({ tax: { ...plan.tax, wealthTaxEnabled } })
+                }
+                hint="Charged every year on what you hold, not on what you earn."
+              />
+              {plan.tax.wealthTaxEnabled && (
+                <>
+                  <NumberField
+                    currency={currency}
+                    grouped
+                    label="Free allowance"
+                    unit={currency}
+                    value={plan.tax.wealthThreshold}
+                    onChange={(value) =>
+                      onChange({ tax: { ...plan.tax, wealthThreshold: value } })
+                    }
+                    min={0}
+                    max={1e12}
+                  />
+                  <NumberField
+                    currency={currency}
+                    label="Wealth tax rate"
+                    unit="% per year"
+                    value={plan.tax.wealthRatePercent}
+                    onChange={(value) =>
+                      onChange({ tax: { ...plan.tax, wealthRatePercent: value } })
+                    }
+                    min={0}
+                    max={10}
+                    slider={{ min: 0, max: 3, step: 0.05 }}
+                  />
+                  <NumberField
+                    currency={currency}
+                    label="Shares valued at"
+                    unit="% of market value"
+                    value={plan.tax.wealthValuationPercent}
+                    onChange={(value) =>
+                      onChange({
+                        tax: { ...plan.tax, wealthValuationPercent: value },
+                      })
+                    }
+                    min={0}
+                    max={100}
+                    slider={{ min: 0, max: 100, step: 5 }}
+                    hint="Shares are assessed below market value for wealth tax."
+                  />
+                </>
+              )}
+            </>
+          )}
         </div>
       </Card>
 

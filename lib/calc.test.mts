@@ -10,6 +10,7 @@ import {
   retirementYearFor,
   simulateScenario,
 } from "./calc.ts";
+import { DEFAULT_TAX } from "./defaults.ts";
 import type { PlanInput, PlanPhase } from "./types.ts";
 
 const phase = (overrides: Partial<PlanPhase> = {}): PlanPhase => ({
@@ -30,6 +31,9 @@ const base: PlanInput = {
   events: [],
   inflationPercent: 2.5,
   annualFeePercent: 0,
+  // The existing cases are about the projection itself, so they run untaxed;
+  // tax has its own file.
+  tax: { ...DEFAULT_TAX, enabled: false },
   scenarios: [{ id: "normal", label: "Expected", returnPercent: 7 }],
 };
 
@@ -381,4 +385,37 @@ test("finds the crossover where growth overtakes what was paid in", () => {
 test("milestones cope with an empty or flat plan", () => {
   assert.deepEqual(milestonesFor([], []), []);
   assert.deepEqual(milestonesFor([0, 0, 0], [0, 0, 0]), []);
+});
+
+test("running out is reported once, and only when there was something to lose", () => {
+  // A pot that was never funded has not "run out".
+  const empty = simulateScenario(
+    { ...base, initialAmount: 0, phases: [phase({ years: 5, monthlyAmount: 0 })] },
+    7,
+  );
+  assert.equal(empty.depletedYear, null);
+
+  // Landing on zero in the final year is where a maximal draw-down is meant to
+  // finish, so it is not flagged either.
+  const lands = simulateScenario(
+    {
+      ...base,
+      initialAmount: 120_000,
+      phases: [phase({ years: 1, monthlyAmount: -10_000 })],
+    },
+    0,
+  );
+  assert.equal(lands.rows[1].balance, 0);
+  assert.equal(lands.depletedYear, null);
+
+  // Running dry with years still to go is.
+  const runsOut = simulateScenario(
+    {
+      ...base,
+      initialAmount: 120_000,
+      phases: [phase({ years: 3, monthlyAmount: -10_000 })],
+    },
+    0,
+  );
+  assert.equal(runsOut.depletedYear, 1);
 });

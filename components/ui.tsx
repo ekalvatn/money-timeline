@@ -260,6 +260,37 @@ export function Select<T extends string>({
   );
 }
 
+export function Checkbox({
+  label,
+  checked,
+  onChange,
+  hint,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  hint?: string;
+}) {
+  const id = useId();
+  return (
+    <div>
+      <div className="flex items-center gap-2">
+        <input
+          id={id}
+          type="checkbox"
+          checked={checked}
+          onChange={(event) => onChange(event.target.checked)}
+          className="size-4 accent-[var(--accent)]"
+        />
+        <label htmlFor={id} className="text-sm font-medium text-ink">
+          {label}
+        </label>
+      </div>
+      {hint && <p className="mt-1 text-xs text-ink-muted">{hint}</p>}
+    </div>
+  );
+}
+
 export function Button({
   children,
   onClick,

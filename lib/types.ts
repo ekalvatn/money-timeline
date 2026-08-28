@@ -46,6 +46,28 @@ export interface OneOffEvent {
   inTodaysMoney: boolean;
 }
 
+/**
+ * Deferred, share-account style tax: nothing is charged while the money
+ * compounds, and withdrawals take tax-free deposits out before they touch
+ * gains. Defaults are Norwegian, because the app's default currency is.
+ */
+export interface TaxSettings {
+  enabled: boolean;
+  /** Rate on realised gains. Norway: 37.84 % on share income. */
+  gainsRatePercent: number;
+  /**
+   * Yearly shielding allowance (skjermingsfradrag) on the cost basis. It
+   * accumulates while unused and shelters gains when they are finally realised.
+   */
+  shieldingRatePercent: number;
+  wealthTaxEnabled: boolean;
+  /** Share of assets that counts toward wealth tax. Norway: 80 % for shares. */
+  wealthValuationPercent: number;
+  /** Free allowance before wealth tax bites, in the plan's currency. */
+  wealthThreshold: number;
+  wealthRatePercent: number;
+}
+
 export interface PlanInput {
   /** Age today. The timeline can be read in ages instead of years from now. */
   currentAge: number;
@@ -62,6 +84,7 @@ export interface PlanInput {
   inflationPercent: number;
   /** Yearly fund/platform cost, in percent of assets. */
   annualFeePercent: number;
+  tax: TaxSettings;
   scenarios: Scenario[];
 }
 
@@ -90,6 +113,18 @@ export interface YearRow {
   growth: number;
   /** Portfolio value expressed in today's purchasing power. */
   realBalance: number;
+  /** Deposits not yet withdrawn: these come out before gains, and untaxed. */
+  costBasis: number;
+  /** Unused shielding allowance carried forward. */
+  shieldingCarry: number;
+  /** Gains tax plus wealth tax settled this year, out of the portfolio. */
+  taxPaidThisYear: number;
+  totalTaxPaid: number;
+  /** What would still be owed if the whole balance were cashed out now. */
+  latentTax: number;
+  /** balance − latentTax: what the pot is really worth to you. */
+  afterTaxBalance: number;
+  afterTaxRealBalance: number;
 }
 
 export interface ScenarioResult extends Scenario {
@@ -114,6 +149,8 @@ export interface ScenarioResult extends Scenario {
   depletedYear: number | null;
   /** The year retirement lands on, or null when it falls outside the horizon. */
   atRetirement: YearRow | null;
+  /** Everything tax costs: paid along the way, plus owed on cashing out. */
+  totalTaxCost: number;
 }
 
 export interface ChartRow {

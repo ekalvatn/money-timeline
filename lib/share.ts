@@ -1,5 +1,11 @@
 import { MAX_YEARS } from "./calc";
-import { DEFAULT_CURRENCY, DEFAULT_PLAN, MAX_EVENTS, MAX_PHASES } from "./defaults";
+import {
+  DEFAULT_CURRENCY,
+  DEFAULT_PLAN,
+  DEFAULT_TAX,
+  MAX_EVENTS,
+  MAX_PHASES,
+} from "./defaults";
 import { CURRENCIES } from "./format";
 import type { CurrencyCode } from "./format";
 import type {
@@ -8,6 +14,7 @@ import type {
   PlanInput,
   PlanPhase,
   ScenarioId,
+  TaxSettings,
 } from "./types";
 
 export interface AppState {
@@ -56,6 +63,31 @@ function sanitizeEvent(raw: unknown, index: number, years: number): OneOffEvent 
  * as hostile: coerce, clamp, and fall back to the default rather than trusting
  * the shape.
  */
+function sanitizeTax(raw: unknown): TaxSettings {
+  const tax = (raw ?? {}) as Partial<TaxSettings>;
+  return {
+    // A plan saved before tax existed has no flag; default it on rather than
+    // silently showing pre-tax figures as if they were the real thing.
+    enabled: tax.enabled !== false,
+    gainsRatePercent: num(tax.gainsRatePercent, DEFAULT_TAX.gainsRatePercent, 0, 90),
+    shieldingRatePercent: num(
+      tax.shieldingRatePercent,
+      DEFAULT_TAX.shieldingRatePercent,
+      0,
+      20,
+    ),
+    wealthTaxEnabled: tax.wealthTaxEnabled !== false,
+    wealthValuationPercent: num(
+      tax.wealthValuationPercent,
+      DEFAULT_TAX.wealthValuationPercent,
+      0,
+      100,
+    ),
+    wealthThreshold: num(tax.wealthThreshold, DEFAULT_TAX.wealthThreshold, 0, 1e12),
+    wealthRatePercent: num(tax.wealthRatePercent, DEFAULT_TAX.wealthRatePercent, 0, 10),
+  };
+}
+
 export function sanitizeState(raw: unknown): AppState {
   const source = (raw ?? {}) as Partial<AppState>;
   const plan = (source.plan ?? {}) as Partial<PlanInput>;
@@ -97,6 +129,7 @@ export function sanitizeState(raw: unknown): AppState {
         0,
         5,
       ),
+      tax: sanitizeTax(plan.tax),
       // Scenario identity and order are fixed — they drive colour assignment,
       // so only the return number is taken from untrusted input.
       scenarios: DEFAULT_PLAN.scenarios.map((fallback) => {

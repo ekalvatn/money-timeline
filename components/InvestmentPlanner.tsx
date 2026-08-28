@@ -196,6 +196,7 @@ function Planner({
             selectedId={selected.id}
             onSelect={setSelectedId}
             retirementAge={plan.retirementAge}
+            taxEnabled={state.plan.tax.enabled}
           />
 
           {/* One control row for everything below it — both charts and the
@@ -368,6 +369,7 @@ function Planner({
               annualFeePercent={state.plan.annualFeePercent}
               inflationPercent={state.plan.inflationPercent}
               years={plan.years}
+              taxEnabled={state.plan.tax.enabled}
             />
           </Card>
 
@@ -380,13 +382,16 @@ function Planner({
               palette={palette}
               currency={state.currency}
               basis={basis}
+              taxEnabled={state.plan.tax.enabled}
             />
           </Card>
 
           <p className="pb-4 text-xs text-ink-muted">
             A projection, not a forecast. Returns are assumed to be smooth and
             constant; real markets are not, and the order in which good and bad
-            years arrive changes the outcome. Tax is not modelled.
+            years arrive changes the outcome — which matters most once you are
+            drawing money out. Tax follows a simplified deferred model with
+            Norwegian defaults; it is not advice about your own situation.
           </p>
         </div>
       </div>

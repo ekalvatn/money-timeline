@@ -15,12 +15,14 @@ export function ValueBreakdown({
   annualFeePercent,
   inflationPercent,
   years,
+  taxEnabled,
 }: {
   scenario: ScenarioResult;
   currency: CurrencyCode;
   annualFeePercent: number;
   inflationPercent: number;
   years: number;
+  taxEnabled: boolean;
 }) {
   const tiles = [
     {
@@ -37,6 +39,17 @@ export function ValueBreakdown({
       value: scenario.feeDrag,
       note: `${formatPercent(annualFeePercent, 2)} a year, compounded over ${years} years`,
     },
+    ...(taxEnabled
+      ? [
+          {
+            key: "tax",
+            label: "Tax takes",
+            sign: "−",
+            value: scenario.totalTaxCost,
+            note: "paid along the way, plus what is owed on cashing out",
+          },
+        ]
+      : []),
     {
       key: "inflation",
       label: "Inflation takes",
@@ -48,7 +61,7 @@ export function ValueBreakdown({
 
   return (
     <div>
-      <dl className="grid gap-4 sm:grid-cols-3">
+      <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {tiles.map((tile) => (
           <div key={tile.key} className="rounded-lg border border-hair p-4">
             <dt className="text-[11px] font-medium uppercase tracking-wide text-ink-muted">
@@ -68,7 +81,19 @@ export function ValueBreakdown({
           {formatCurrency(scenario.feeDrag, currency)}
         </strong>{" "}
         out of this plan — money that would otherwise have compounded alongside
-        the rest. Inflation then takes another{" "}
+        the rest.{" "}
+        {taxEnabled && (
+          <>
+            Tax costs{" "}
+            <strong className="font-medium text-ink">
+              {formatCurrency(scenario.totalTaxCost, currency)}
+            </strong>{" "}
+            in total, of which{" "}
+            {formatCurrency(scenario.final.latentTax, currency)} is still owed on
+            gains you have not cashed out yet.{" "}
+          </>
+        )}
+        Inflation then takes another{" "}
         {formatCurrency(scenario.inflationLoss, currency)} of what is left, so
         the plan&rsquo;s {formatCurrency(scenario.final.balance, currency)} final
         value is worth{" "}

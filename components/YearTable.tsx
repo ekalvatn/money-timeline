@@ -15,11 +15,13 @@ export function YearTable({
   palette,
   currency,
   basis,
+  taxEnabled,
 }: {
   plan: PlanResult;
   palette: ChartPalette;
   currency: CurrencyCode;
   basis: MoneyBasis;
+  taxEnabled: boolean;
 }) {
   return (
     <div className="max-h-[26rem] overflow-auto rounded-lg border border-hair">
@@ -44,6 +46,11 @@ export function YearTable({
             <th scope="col" className="px-3 py-2 text-right font-medium text-ink-2">
               Paid in, less taken out
             </th>
+            {taxEnabled && (
+              <th scope="col" className="px-3 py-2 text-right font-medium text-ink-2">
+                Tax paid
+              </th>
+            )}
             {plan.scenarios.map((scenario, index) => (
               <th
                 key={scenario.id}
@@ -95,6 +102,13 @@ export function YearTable({
                   currency,
                 )}
               </td>
+              {taxEnabled && (
+                <td className="px-3 py-1.5 text-right text-ink-2">
+                  {row.totalTaxPaid > 0
+                    ? formatCurrency(row.totalTaxPaid, currency)
+                    : "—"}
+                </td>
+              )}
               {plan.scenarios.map((scenario) => (
                 <td key={scenario.id} className="px-3 py-1.5 text-right text-ink">
                   {formatCurrency(
@@ -124,6 +138,8 @@ export function planToCsv(plan: PlanResult): string {
     ...plan.scenarios.flatMap((scenario) => [
       `${scenario.id}_future_money`,
       `${scenario.id}_todays_money`,
+      `${scenario.id}_tax_paid_to_date`,
+      `${scenario.id}_after_tax`,
     ]),
   ];
   const rows = (plan.scenarios[0]?.rows ?? []).map((row, index) => [
@@ -136,6 +152,8 @@ export function planToCsv(plan: PlanResult): string {
     ...plan.scenarios.flatMap((scenario) => [
       Math.round(scenario.rows[index].balance),
       Math.round(scenario.rows[index].realBalance),
+      Math.round(scenario.rows[index].totalTaxPaid),
+      Math.round(scenario.rows[index].afterTaxBalance),
     ]),
   ]);
   return [header, ...rows].map((row) => row.join(",")).join("\n");

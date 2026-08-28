@@ -8,6 +8,7 @@ import type {
   PlanResult,
   ScenarioId,
   ScenarioResult,
+  TaxSettings,
   YearRow,
 } from "./types";
 
@@ -95,10 +96,36 @@ function eventAmount(event: OneOffEvent, inflation: number): number {
 }
 
 /**
+ * What would still be owed if the whole balance were cashed out right now:
+ * everything above the untaxed deposits, less whatever shielding has piled up.
+ */
+function latentTaxOn(
+  balance: number,
+  costBasis: number,
+  shieldingCarry: number,
+  tax: TaxSettings,
+): number {
+  if (!tax.enabled) return 0;
+  const unrealised = Math.max(0, balance - costBasis);
+  const sheltered = Math.min(unrealised, shieldingCarry);
+  return (unrealised - sheltered) * (tax.gainsRatePercent / 100);
+}
+
+/**
  * Month-by-month simulation. Growth is applied first, then the month's cash
  * flow — i.e. payments are made at the end of each month, which is the
  * conservative reading and matches how a monthly transfer behaves. Withdrawals
  * can never take out more than is there; the shortfall marks the plan depleted.
+ *
+ * Tax is deferred and settled once a year, out of the portfolio itself, so the
+ * pot funds both your spending and the tax bill on it. Withdrawals draw down
+ * tax-free deposits before they touch gains, which is how a share account
+ * works and is why a draw-down plan pays almost nothing in its early years.
+ *
+ * Two simplifications worth knowing: the shielding allowance is computed on the
+ * cost basis at the start of each year, standing in for the "lowest deposit
+ * during the year" rule; and settling the tax bill is not itself treated as a
+ * taxable realisation, which would otherwise recurse.
  */
 export function simulateScenario(
   input: PlanInput,
@@ -107,6 +134,7 @@ export function simulateScenario(
   const years = planYears(input.phases);
   const spans = phaseSpans(input.phases);
   const inflation = input.inflationPercent / 100;
+  const tax = input.tax;
   const net = netAnnualReturn(grossReturnPercent, input.annualFeePercent);
   // Guard the fractional power: a total loss or worse has no real 12th root.
   const monthlyRate =
@@ -127,6 +155,10 @@ export function simulateScenario(
   let monthsElapsed = 0;
   let depletedYear: number | null = null;
 
+  let costBasis = balance;
+  let shieldingCarry = 0;
+  let totalTaxPaid = 0;
+
   const rows: YearRow[] = [
     {
       year: 0,
@@ -139,10 +171,24 @@ export function simulateScenario(
       balance,
       growth: 0,
       realBalance: balance,
+      costBasis,
+      shieldingCarry,
+      taxPaidThisYear: 0,
+      totalTaxPaid: 0,
+      latentTax: 0,
+      afterTaxBalance: balance,
+      afterTaxRealBalance: balance,
     },
   ];
 
   for (let yearIndex = 0; yearIndex < years; yearIndex++) {
+    // Shielding accrues on the deposits standing at the start of the year, plus
+    // whatever allowance has gone unused so far.
+    if (tax.enabled) {
+      shieldingCarry +=
+        (costBasis + shieldingCarry) * (tax.shieldingRatePercent / 100);
+    }
+
     const span = spans.find(
       (candidate) =>
         yearIndex >= candidate.startYear && yearIndex < candidate.endYear,
@@ -158,11 +204,13 @@ export function simulateScenario(
 
     let paidInThisYear = 0;
     let takenOutThisYear = 0;
+    let gainsTaxThisYear = 0;
 
     const applyFlow = (amount: number, atYearFraction: number) => {
       if (amount > 0) {
         balance += amount;
         contributed += amount;
+        costBasis += amount;
         paidInThisYear += amount;
         netInvestedReal += amount / Math.pow(1 + inflation, atYearFraction);
       } else if (amount < 0) {
@@ -171,6 +219,17 @@ export function simulateScenario(
         withdrawn += taken;
         takenOutThisYear += taken;
         netInvestedReal -= taken / Math.pow(1 + inflation, atYearFraction);
+
+        // Deposits come out first and untaxed; only what is left is a gain.
+        const fromBasis = Math.min(taken, costBasis);
+        costBasis -= fromBasis;
+        const gain = taken - fromBasis;
+        if (tax.enabled && gain > 0) {
+          const sheltered = Math.min(gain, shieldingCarry);
+          shieldingCarry -= sheltered;
+          gainsTaxThisYear += (gain - sheltered) * (tax.gainsRatePercent / 100);
+        }
+
         if (taken < -amount && depletedYear === null) {
           depletedYear = yearIndex + 1;
         }
@@ -188,7 +247,40 @@ export function simulateScenario(
       applyFlow(eventAmount(event, inflation), year);
     }
 
+    // Wealth tax is charged on the year-end holding, before the bill is paid.
+    let wealthTax = 0;
+    if (tax.enabled && tax.wealthTaxEnabled) {
+      const assessed = balance * (tax.wealthValuationPercent / 100);
+      wealthTax =
+        Math.max(0, assessed - tax.wealthThreshold) *
+        (tax.wealthRatePercent / 100);
+    }
+
+    const due = gainsTaxThisYear + wealthTax;
+    const paid = Math.min(due, balance);
+    balance -= paid;
+    totalTaxPaid += paid;
+    if (paid < due && depletedYear === null) depletedYear = year;
+
+    // A tax bill that empties the pot exactly is paid in full, so the shortfall
+    // rule above never fires — and with no withdrawals left to fail, the plan
+    // would never report running out at all. Catch the year the balance falls
+    // to nothing, which also excludes a pot that was never funded (the previous
+    // year has to have held something) and a plan that lands on zero right at
+    // the end, which is where a maximal draw-down is supposed to finish.
+    const previousBalance = rows[rows.length - 1].balance;
+    if (
+      depletedYear === null &&
+      balance <= 1e-9 &&
+      previousBalance > 1e-9 &&
+      year < years
+    ) {
+      depletedYear = year;
+    }
+
     const netInvested = contributed - withdrawn;
+    const latentTax = latentTaxOn(balance, costBasis, shieldingCarry, tax);
+    const deflator = Math.pow(1 + inflation, year);
     rows.push({
       year,
       contributionThisYear: paidInThisYear,
@@ -199,7 +291,14 @@ export function simulateScenario(
       netInvestedReal,
       balance,
       growth: balance - netInvested,
-      realBalance: balance / Math.pow(1 + inflation, year),
+      realBalance: balance / deflator,
+      costBasis,
+      shieldingCarry,
+      taxPaidThisYear: paid,
+      totalTaxPaid,
+      latentTax,
+      afterTaxBalance: balance - latentTax,
+      afterTaxRealBalance: (balance - latentTax) / deflator,
     });
   }
 
@@ -299,6 +398,7 @@ export function buildPlan(input: PlanInput): PlanResult {
           : 0,
       inflationLoss: final.balance - final.realBalance,
       feeDrag: Math.max(0, deliveredFeeFree - delivered),
+      totalTaxCost: final.totalTaxPaid + final.latentTax,
       depletedYear,
       atRetirement: retirementYear === null ? null : rows[retirementYear] ?? null,
     };

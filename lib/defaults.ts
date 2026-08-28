@@ -1,5 +1,21 @@
-import type { OneOffEvent, PlanInput, PlanPhase } from "./types";
+import type { OneOffEvent, PlanInput, PlanPhase, TaxSettings } from "./types";
 import type { CurrencyCode } from "./format";
+
+/**
+ * Norwegian figures, because the app's default currency is NOK: 37.84 % on
+ * share income, a shielding rate near recent years', shares valued at 80 % for
+ * wealth tax, and roughly the current free allowance. All of them are editable,
+ * and the whole model switches off in one place for anywhere else.
+ */
+export const DEFAULT_TAX: TaxSettings = {
+  enabled: true,
+  gainsRatePercent: 37.84,
+  shieldingRatePercent: 3,
+  wealthTaxEnabled: true,
+  wealthValuationPercent: 80,
+  wealthThreshold: 1_760_000,
+  wealthRatePercent: 1,
+};
 
 export const DEFAULT_PLAN: PlanInput = {
   currentAge: 32,
@@ -26,6 +42,7 @@ export const DEFAULT_PLAN: PlanInput = {
   events: [],
   inflationPercent: 2.5,
   annualFeePercent: 0.4,
+  tax: DEFAULT_TAX,
   scenarios: [
     { id: "pessimistic", label: "Pessimistic", returnPercent: 4 },
     { id: "normal", label: "Expected", returnPercent: 7 },

@@ -20,6 +20,7 @@ export function ScenarioCards({
   selectedId,
   onSelect,
   retirementAge,
+  taxEnabled,
 }: {
   scenarios: ScenarioResult[];
   palette: ChartPalette;
@@ -27,6 +28,7 @@ export function ScenarioCards({
   selectedId: string;
   onSelect: (id: ScenarioResult["id"]) => void;
   retirementAge: number;
+  taxEnabled: boolean;
 }) {
   return (
     <div className="grid gap-4 sm:grid-cols-3">
@@ -72,6 +74,12 @@ export function ScenarioCards({
               {formatCurrency(scenario.final.realBalance, currency)}{" "}
               <span className="text-ink-muted">in today&rsquo;s money</span>
             </p>
+            {taxEnabled && (
+              <p className="mt-0.5 text-sm text-ink-2">
+                {formatCurrency(scenario.final.afterTaxBalance, currency)}{" "}
+                <span className="text-ink-muted">after tax to cash it out</span>
+              </p>
+            )}
 
             {scenario.depletedYear !== null && (
               <p

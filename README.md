@@ -42,6 +42,7 @@ years.
 | Inflation | Converts every future amount into today's purchasing power |
 | Yearly cost | Fund and platform fees, charged on the whole balance |
 | Return scenarios | Three editable gross yearly returns — pessimistic, expected, optimistic |
+| Tax | Deferred gains tax with an accumulating shielding allowance, plus an optional annual wealth tax. See below |
 
 The simulation in `lib/calc.ts` steps month by month. Growth is applied first
 and the month's cash flow lands after it, so payments are treated as
@@ -73,6 +74,39 @@ and pins down phase sequencing, each escalation mode, draw-downs, depletion,
 one-off timing and inflation-stated amounts, the fee treatment, retirement
 placement, and the degenerate cases.
 
+## Tax
+
+Tax is **deferred and settled once a year out of the portfolio itself**, so the
+pot funds both your spending and the bill on it. Three rules do the work:
+
+- **Deposits come out before gains.** A withdrawal draws down untaxed cost basis
+  first and only touches gains once the deposits are gone. This is how a share
+  account works, and it is why a moderate draw-down plan can pay almost nothing
+  in gains tax for years.
+- **Shielding accumulates** (*skjermingsfradrag*). Each year an allowance is
+  computed on the deposits plus whatever allowance has gone unused, and it piles
+  up until gains are finally realised, when it shelters them.
+- **Wealth tax** is charged annually on holdings above a free allowance, with
+  shares assessed below market value.
+
+Because tax is deferred, the ending balance is not what the plan is worth: a
+bill is still owed on gains never cashed out. Every row carries a **latent tax**
+figure and an after-tax value alongside the balance, and the breakdown card
+reports both halves — paid along the way, and still owed.
+
+Defaults are Norwegian (37.84 % on share income, shares at 80 % for wealth tax),
+because the app's default currency is NOK. Every figure is editable and the
+whole model switches off in one place.
+
+Two simplifications, both deliberate. The shielding allowance is computed on the
+cost basis at the *start* of each year, standing in for the "lowest deposit
+during the year" rule. And settling the tax bill is not itself treated as a
+taxable realisation, which would otherwise recurse; the error is second-order.
+
+Watch what tax does to *fees*, incidentally: on the default plan the fee drag
+falls from 334 870 to 314 434, because tax shrinks the pot the fees are charged
+on. The drags are not independent of each other.
+
 ## Money inputs
 
 Amount fields group as you type, in the selected currency's own convention —
@@ -91,10 +125,10 @@ Changing currency re-renders every amount in the new locale, so a value can
 never be re-read under the wrong separator rules. `lib/format.test.mts` covers
 the round-trips.
 
-Not modelled: tax, sequence-of-returns risk, and any variance at all. Returns
-are assumed smooth and constant, which no market has ever been — which matters
-most for draw-down phases, where the order of good and bad years changes how
-long the money lasts. It is a projection, not a forecast.
+Not modelled: sequence-of-returns risk, and any variance at all. Returns are
+assumed smooth and constant, which no market has ever been — which matters most
+for draw-down phases, where the order of good and bad years changes how long the
+money lasts. It is a projection, not a forecast.
 
 ## Layout
 
